@@ -206,18 +206,18 @@ class Bot(irc.bot.SingleServerIRCBot):
         commands = {}
         for name in self.plugins:
             commands[self.plugins[name]['cmd']] = name
-        output = pinhook.plugin.cmds[cmd](self.Message(
-            channel=chan,
-            cmd=cmd,
-            nick_list=nick_list,
-            nick=nick,
-            arg=arg,
-            botnick=self.bot_nick,
-            ops=self.ops,
-            logger=self.logger
-        ))
         if cmd in commands:
-            self.plugins[commands[cmd]]['run'](output)
+            output = self.plugins[commands[cmd]]['run'](self.Message(
+                channel=chan,
+                cmd=cmd,
+                nick_list=nick_list,
+                nick=nick,
+                arg=arg,
+                botnick=self.bot_nick,
+                ops=self.ops,
+                logger=self.logger
+            ))
+        return output
 
     def process_event(self, c, e):
         nick = e.source.nick
