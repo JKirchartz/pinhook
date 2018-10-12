@@ -24,7 +24,9 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.start_logging(self.log_level)
         self.output_message = pinhook.plugin.message
         self.output_action = pinhook.plugin.action
-        self.load_plugins()
+        self.plugins = {}
+        self.load_legacy_plugins()
+        self.load_class_plugins()
 
     class Message:
         def __init__(self, channel, nick, botnick, ops, logger, cmd=None, arg=None, text=None, nick_list=None):
@@ -86,7 +88,23 @@ class Bot(irc.bot.SingleServerIRCBot):
         self.logger.addHandler(fh)
         self.logger.info('Logging started!')
 
-    def load_plugins(self):
+    def load_class_plugins(self):
+        self.plugins = {}
+        modules = [m for m in os.listdir(self.plugin_dir) if m.endswith('.py')]
+        for m in modules:
+            try:
+                name = m[:-3]
+                fp, pathname, description = imp.find_module(name, [self.plugin_dir])
+                p = imp.load_module(name, fp, pathname, description)
+                pluginclass = p.Plugin()
+                self.plugins[pluginclass.name] = {
+                    'cmd': pluginclass.command,
+                    'run': pluginclass.run
+                }
+            except Exception as e:
+                self.logger.exception('could not load plugin')
+
+    def load_legacy_plugins(self):
         # clear plugin list to ensure no old plugins remain
         self.logger.info('clearing plugin cache')
         pinhook.plugin.clear_plugins()
@@ -184,6 +202,23 @@ class Bot(irc.bot.SingleServerIRCBot):
                     self.logger.exception('issue with listener {}'.format(lstnr))
         return output
 
+    def call_class_plugins(self, chan, cmd, text, nick_list, nick, arg):
+        commands = {}
+        for name in self.plugins:
+            commands[self.plugins[name]['cmd']] = name
+        output = pinhook.plugin.cmds[cmd](self.Message(
+            channel=chan,
+            cmd=cmd,
+            nick_list=nick_list,
+            nick=nick,
+            arg=arg,
+            botnick=self.bot_nick,
+            ops=self.ops,
+            logger=self.logger
+        ))
+        if cmd in commands:
+            self.plugins[commands[cmd]]['run'](output)
+
     def process_event(self, c, e):
         nick = e.source.nick
         text = e.arguments[0]
@@ -215,6 +250,7 @@ class Bot(irc.bot.SingleServerIRCBot):
                 'arg': arg
             }
             output = self.call_plugins(**plugin_info)
+            output = self.call_class_plugins(**plugin_info)
         if output:
             self.process_output(c, chan, output)
 

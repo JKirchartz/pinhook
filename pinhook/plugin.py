@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from enum import Enum
 
 
@@ -20,6 +21,22 @@ class Output:
             return msg.splitlines()
         except AttributeError:
             return msg
+
+
+class BasePlugin(ABC):
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    @property
+    @abstractmethod
+    def command(self):
+        pass
+
+    @abstractmethod
+    def run(self, msg):
+        pass
 
 
 def action(msg):
