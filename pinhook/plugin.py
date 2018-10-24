@@ -31,11 +31,7 @@ class BasePlugin(ABC):
 
     @property
     @abstractmethod
-    def command(self):
-        pass
-
-    @abstractmethod
-    def run(self, msg):
+    def help(self):
         pass
 
 
