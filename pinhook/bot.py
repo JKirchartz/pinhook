@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 import imp
 import logging
 import os
@@ -30,6 +31,8 @@ class Bot(irc.bot.SingleServerIRCBot):
 
     class Message:
         def __init__(self, channel, nick, botnick, ops, logger, action, privmsg, notice, cmd=None, arg=None, text=None, nick_list=None):
+            self.datetime = datetime.now(timezone.utc)
+            self.timestamp = self.datetime.timestamp()
             self.channel = channel
             self.nick = nick
             self.nick_list = nick_list
@@ -137,8 +140,8 @@ class Bot(irc.bot.SingleServerIRCBot):
             self.logger.info('identifying with nickserv')
             c.privmsg(self.nickserv, 'identify {}'.format(self.ns_pass))
         for channel in self.chanlist:
-            self.logger.info('joining channel {}'.format(channel))
-            c.join(channel)
+            self.logger.info('joining channel {}'.format(channel.split()[0]))
+            c.join(*channel.split())
 
     def on_pubmsg(self, c, e):
         self.process_event(c, e)
@@ -161,9 +164,9 @@ class Bot(irc.bot.SingleServerIRCBot):
         else:
             op = False
         if cmd == '!join' and op:
-            c.join(arg)
+            c.join(*arg.split())
             self.logger.info('joining {} per request of {}'.format(arg, nick))
-            output = self.output_message('{}: joined {}'.format(nick, arg))
+            output = self.output_message('{}: joined {}'.format(nick, arg.split()[0]))
         elif cmd == '!quit' and op:
             self.logger.info('quitting per request of {}'.format(nick))
             c.quit("See y'all later!")

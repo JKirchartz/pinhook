@@ -57,7 +57,9 @@ Optional aguments are:
 These options are the same for both IRC and Twitch
 
 ### Creating plugins
-In your chosen plugins directory ("plugins" by default) make a python file with a function. You can use the `@pinhook.plugin.register` decorator to tell the bot the command to activate the function.
+There are two types of plugins, commands and listeners. Commands only activate if a message starts with the command word, while listeners receive all messages and are parsed by the plugin for maximum flexibility.
+
+In your chosen plugins directory ("plugins" by default) make a python file with a function. You use the `@pinhook.plugin.register` decorator to create command plugins, or `@pinhook.plugin.listener` to create listeners.
 
 The function will need to be structured as such:
 ```python
@@ -72,19 +74,31 @@ def test_plugin(msg):
 The function will need to accept a single argument in order to accept a `Message` object from the bot.
 
 The `Message` object has the following attributes:
-* `cmd`: the command that triggered the function
+* `cmd`: (for command plugins) the command that triggered the function
 * `nick`: the user who triggered the command
-* `arg`: all the trailing text after the command. This is what you will use to get optional information for the command
+* `arg`: (for command plugins) all the trailing text after the command. This is what you will use to get optional information for the command
+* `text`: (for listener plugins) the entire text of the message
 * `channel`: the channel where the command was initiated
 * `ops`: the list of bot operators
 * `botnick`: the nickname of the bot
 * `logger`: instance of `Bot`'s logger
+* `datetime`: aware `datetime.datetime` object when the `Message` object was created
+* `timestamp`: float for the unix timestamp when the `Message` object was created
 
-The plugin function **must** return one of the following in order to give a response to the command:
+It also contains the following IRC functions:
+* `privmsg`: send a message to an arbitrary channel or user
+* `action`: same as privmsg, but does a CTCP action. (i.e., `/me does a thing`)
+* `notice`: send a notice
+
+**OR**
+
+The plugin function can return one of the following in order to give a response to the command:
 * `pinhook.plugin.message`: basic message in channel where command was triggered
 * `pinhook.plugin.action`: CTCP action in the channel where command was triggered (basically like using `/me does a thing`)
 
 ## Examples
 There are some basic examples in the `examples` directory in this repository.
 
-For a live and maintained bot running the current version of pinhook see [pinhook-tilde](https://github.com/archangelic/pinhook-tilde).
+Here is a list of live bots using pinhook:
+* [pinhook-tilde](https://github.com/archangelic/pinhook-tilde) - fun bot for tilde.town
+* [adminbot](https://github.com/tildetown/adminbot) - admin helper bot for tilde.town, featuring some of the ways you can change the Bot class to suit your needs
